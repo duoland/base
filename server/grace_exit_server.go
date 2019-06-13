@@ -2,29 +2,47 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"time"
 )
 
-// GraceExitServer is a http server supports grace exit
+// GraceExitError is the error stands for the grace exit of server
+var GraceExitError = errors.New("server gracefully exit")
+
+// GraceExitServer is a http server that supports grace exit on signal
 type GraceExitServer struct {
 	*http.Server
-	stopSignal   <-chan struct{} // signal to tell the server to exit
-	notifySignal chan struct{}   // signal to notify when server gracelly exited
+	stopSignal <-chan struct{} // signal to tell the server to exit
 }
 
-// NewGraceExitServer creates a new server object
-func NewGraceExitServer(host string, port int, stopSignal <-chan struct{}, notifySignal chan struct{}) *GraceExitServer {
+// NewGraceExitServer creates a new grace exit server object with DefaultServeMux handler
+func NewGraceExitServer(host string, port int, stopSignal <-chan struct{}) *GraceExitServer {
 	svr := &GraceExitServer{
-		stopSignal:   stopSignal,
-		notifySignal: notifySignal,
-		Server:       &http.Server{},
+		stopSignal: stopSignal,
+		Server:     &http.Server{},
 	}
 	endPoint := fmt.Sprintf("%s:%d", host, port)
+
+	// set Addr and Handler
 	svr.Addr = endPoint
 	svr.Handler = nil
+	return svr
+}
+
+// NewGraceExitServerWithHandler creates a new grace exit server object with self defined handler
+func NewGraceExitServerWithHandler(host string, port int, stopSignal <-chan struct{}, handler http.Handler) *GraceExitServer {
+	svr := &GraceExitServer{
+		stopSignal: stopSignal,
+		Server:     &http.Server{},
+	}
+	endPoint := fmt.Sprintf("%s:%d", host, port)
+
+	// set Addr and Handler
+	svr.Addr = endPoint
+	svr.Handler = handler
 	return svr
 }
 
@@ -39,14 +57,23 @@ func (srv *GraceExitServer) ListenAndServe() error {
 		return err
 	}
 
-	// check the stop signal to quit accept in time
+	shutdownDone := make(chan struct{})
+
+	// check the stop signal to quit tcp Accept in time
 	go func() {
+		defer close(shutdownDone) // notify the shutdownDone channel
+
+		stopSignalPollInterval := time.Millisecond * 100
+		ticker := time.NewTicker(stopSignalPollInterval)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-srv.stopSignal:
-				http.Get(fmt.Sprintf("http://%s", addr))
+				srv.Shutdown(context.Background())
+				http.Head(fmt.Sprintf("http://%s", addr))
+				return
 			default:
-				<-time.After(time.Millisecond * 100)
+				<-ticker.C // block for next ticker
 			}
 		}
 	}()
@@ -57,18 +84,12 @@ func (srv *GraceExitServer) ListenAndServe() error {
 		srv.stopSignal,
 	})
 
-	// shutdown the server after accept quits
-	err = srv.Shutdown(context.Background())
-	if err != nil {
-		return err
-	}
+	// wait for the listen fully exits
+	<-shutdownDone
 
-	// fire notify signal
-	close(srv.notifySignal)
-
-	// if grace exit, reset error
-	if _, ok := err.(GraceExitError); ok {
-		return nil
+	// reset err when gracefully exits
+	if err == http.ErrServerClosed || err == GraceExitError {
+		err = nil
 	}
 
 	return err
@@ -84,7 +105,7 @@ type GraceExitListener struct {
 func (ln GraceExitListener) Accept() (net.Conn, error) {
 	select {
 	case <-ln.stopSignal:
-		err := GraceExitError{}
+		err := GraceExitError
 		return nil, err
 	default:
 		tc, err := ln.AcceptTCP()
@@ -95,12 +116,4 @@ func (ln GraceExitListener) Accept() (net.Conn, error) {
 		tc.SetKeepAlivePeriod(3 * time.Minute)
 		return tc, nil
 	}
-}
-
-// GraceExitError is the error stands for the grace exit of server
-type GraceExitError struct {
-}
-
-func (e GraceExitError) Error() string {
-	return "server gracefully exit"
 }
