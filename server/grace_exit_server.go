@@ -87,7 +87,6 @@ func (ln GraceExitListener) Accept() (net.Conn, error) {
 		err := GraceExitError{}
 		return nil, err
 	default:
-		fmt.Println("accept ...")
 		tc, err := ln.AcceptTCP()
 		if err != nil {
 			return nil, err
