@@ -1,5 +1,35 @@
 package server
 
+//package main
+//
+//import (
+//	"fmt"
+//	"github.com/duoke/base/server"
+//	"net/http"
+//	"time"
+//)
+//
+//func main() {
+//	host := "localhost"
+//	port := 8080
+//	stopSignal := make(chan struct{})
+//
+//	graceServer := server.NewGraceExitServer(host, port, stopSignal)
+//	http.HandleFunc("/", func(resp http.ResponseWriter, req *http.Request) {
+//		if req.URL.Path == "/stop" {
+//			close(stopSignal)
+//		} else {
+//			<-time.After(time.Second * 10)
+//			resp.Write([]byte("ok"))
+//		}
+//	})
+//
+//	err := graceServer.ListenAndServe()
+//	if err != nil {
+//		fmt.Println("Err:", err)
+//	}
+//}
+
 import (
 	"context"
 	"errors"
