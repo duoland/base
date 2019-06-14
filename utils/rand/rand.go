@@ -1,4 +1,4 @@
-package trace
+package rand
 
 import (
 	"math/rand"
