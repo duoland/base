@@ -16,6 +16,14 @@ func NewStringSet(elems ...string) *StringSet {
 	}
 }
 
+// Contains returns true when elem in the set
+func (s *StringSet) Contains(elem string) bool {
+	if _, exists := s.setElems[elem]; exists {
+		return true
+	}
+	return false
+}
+
 // Elems returns the elems of the string set
 func (s *StringSet) Elems() []string {
 	elems := make([]string, 0, len(s.setElems))
