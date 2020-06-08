@@ -33,6 +33,17 @@ func (s *StringSet) Elems() []string {
 	return elems
 }
 
+// ElemsFunc returns the elems that meet the specified func
+func (s *StringSet) ElemsFunc(fn func(string) bool) []string {
+	elems := make([]string, 0, len(s.setElems))
+	for k := range s.setElems {
+		if fn(k) {
+			elems = append(elems, k)
+		}
+	}
+	return elems
+}
+
 // Append appends the elems into the string set and return itself
 func (s *StringSet) Append(elems ...string) *StringSet {
 	for _, e := range elems {
