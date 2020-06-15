@@ -16,6 +16,17 @@ func NewStringSet(elems ...string) *StringSet {
 	}
 }
 
+// NewStringSetFunc returns a new string set with a decoration
+func NewStringSetFunc(decoration func(string) string, elems ...string) *StringSet {
+	setElems := make(map[string]struct{})
+	for _, e := range elems {
+		setElems[decoration(e)] = struct{}{}
+	}
+	return &StringSet{
+		setElems: setElems,
+	}
+}
+
 // Contains returns true when elem in the set
 func (s *StringSet) Contains(elem string) bool {
 	if _, exists := s.setElems[elem]; exists {
