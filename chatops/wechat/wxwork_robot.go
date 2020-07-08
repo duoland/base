@@ -8,6 +8,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -216,6 +218,7 @@ func (r *WxWorkRobot) sendMessage(messageObj interface{}) (err error) {
 	// check http code
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("wxwork request error, %s", resp.Status)
+		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	// parse response body
@@ -268,6 +271,7 @@ func (r *WxWorkRobot) UploadFile(fileBody []byte, fileName string) (mediaID stri
 	// check http code
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("wxwork request error, %s", resp.Status)
+		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	// parse response body
