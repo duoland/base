@@ -27,61 +27,61 @@ const WxWorkRobotTimeout = time.Second * 30
 const WxWorkRobotStatusOK = 0
 
 const (
-	WxMessageTypeText     = "text"
-	WxMessageTypeMarkdown = "markdown"
-	WxMessageTypeImage    = "image"
-	WxMessageTypeNews     = "news"
-	WxMessageTypeFile     = "file"
+	WxWorkRobotMessageTypeText     = "text"
+	WxWorkRobotMessageTypeMarkdown = "markdown"
+	WxWorkRobotMessageTypeImage    = "image"
+	WxWorkRobotMessageTypeNews     = "news"
+	WxWorkRobotMessageTypeFile     = "file"
 )
 
-type WxTextMessage struct {
-	MessageType string            `json:"msgtype"`
-	MessageBody WxTextMessageBody `json:"text"`
+type WxWorkRobotTextMessage struct {
+	MessageType string                     `json:"msgtype"`
+	MessageBody WxWorkRobotTextMessageBody `json:"text"`
 }
 
-type WxTextMessageBody struct {
+type WxWorkRobotTextMessageBody struct {
 	Content             string   `json:"content"`
 	MentionedList       []string `json:"mentioned_list,omitempty"`
 	MentionedMobileList []string `json:"mentioned_mobile_list,omitempty"`
 }
 
-type WxMarkdownMessageBody WxTextMessageBody
+type WxWorkRobotMarkdownMessageBody WxWorkRobotTextMessageBody
 
-type WxMarkdownMessage struct {
-	MessageType string                `json:"msgtype"`
-	MessageBody WxMarkdownMessageBody `json:"markdown"`
+type WxWorkRobotMarkdownMessage struct {
+	MessageType string                         `json:"msgtype"`
+	MessageBody WxWorkRobotMarkdownMessageBody `json:"markdown"`
 }
 
-type WxImageMessage struct {
-	MessageType string             `json:"msgtype"`
-	MessageBody WxImageMessageBody `json:"image"`
+type WxWorkRobotImagMessage struct {
+	MessageType string                     `json:"msgtype"`
+	MessageBody WxWorkRobotImagMessageBody `json:"image"`
 }
-type WxImageMessageBody struct {
+type WxWorkRobotImagMessageBody struct {
 	Base64 string `json:"base64"`
 	MD5    string `json:"md5"`
 }
 
-type WxNewsMessage struct {
-	MessageType string            `json:"msgtype"`
-	MessageBody WxNewsMessageBody `json:"news"`
+type WxWorkRobotNewsMessage struct {
+	MessageType string                     `json:"msgtype"`
+	MessageBody WxWorkRobotNewsMessageBody `json:"news"`
 }
-type WxNewsMessageBody struct {
-	Articles []WxNewsMessageArticle `json:"articles"`
+type WxWorkRobotNewsMessageBody struct {
+	Articles []WxWorkRobotNewsMessageArticle `json:"articles"`
 }
 
-type WxNewsMessageArticle struct {
+type WxWorkRobotNewsMessageArticle struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	URL         string `json:"url"`
 	PictureURL  string `json:"picurl"`
 }
 
-type WxFileMessage struct {
-	MessageType string            `json:"msgtype"`
-	MessageBody WxFileMessageBody `json:"file"`
+type WxWorkRobotFileMessage struct {
+	MessageType string                     `json:"msgtype"`
+	MessageBody WxWorkRobotFileMessageBody `json:"file"`
 }
 
-type WxFileMessageBody struct {
+type WxWorkRobotFileMessageBody struct {
 	MediaID string `json:"media_id"`
 }
 
@@ -90,12 +90,12 @@ type WxWorkRobot struct {
 	client *http.Client
 }
 
-type WxMessageResp struct {
+type WxWorkRobotMessageResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
 }
 
-type WxUploadFileResp struct {
+type WxWorkRobotUploadFileResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
 	Type       string `json:"type"`
@@ -122,9 +122,9 @@ func NewWxWorkRobotWithClient(client *http.Client) *WxWorkRobot {
 
 // SendTextMessage send the text message
 func (r *WxWorkRobot) SendTextMessage(key, text string) (err error) {
-	textMessage := WxTextMessage{
-		MessageType: WxMessageTypeText,
-		MessageBody: WxTextMessageBody{
+	textMessage := WxWorkRobotTextMessage{
+		MessageType: WxWorkRobotMessageTypeText,
+		MessageBody: WxWorkRobotTextMessageBody{
 			Content: text,
 		},
 	}
@@ -133,9 +133,9 @@ func (r *WxWorkRobot) SendTextMessage(key, text string) (err error) {
 
 // SendTextMessage send the text message with specified mentioned users
 func (r *WxWorkRobot) SendTextMessageWithMention(key, content string, mentionedList []string, mentionedMobileList []string) (err error) {
-	textMessage := WxTextMessage{
-		MessageType: WxMessageTypeText,
-		MessageBody: WxTextMessageBody{
+	textMessage := WxWorkRobotTextMessage{
+		MessageType: WxWorkRobotMessageTypeText,
+		MessageBody: WxWorkRobotTextMessageBody{
 			Content:             content,
 			MentionedList:       mentionedList,
 			MentionedMobileList: mentionedMobileList,
@@ -146,9 +146,9 @@ func (r *WxWorkRobot) SendTextMessageWithMention(key, content string, mentionedL
 
 // SendMarkdownMessage send the markdown message
 func (r *WxWorkRobot) SendMarkdownMessage(key, content string) (err error) {
-	markdownMessage := WxMarkdownMessage{
-		MessageType: WxMessageTypeMarkdown,
-		MessageBody: WxMarkdownMessageBody{
+	markdownMessage := WxWorkRobotMarkdownMessage{
+		MessageType: WxWorkRobotMessageTypeMarkdown,
+		MessageBody: WxWorkRobotMarkdownMessageBody{
 			Content: content,
 		},
 	}
@@ -157,9 +157,9 @@ func (r *WxWorkRobot) SendMarkdownMessage(key, content string) (err error) {
 
 // SendMarkdownMessageWithMention send the markdown message with specified mentioned users
 func (r *WxWorkRobot) SendMarkdownMessageWithMention(key, content string, mentionedList []string, mentionedMobileList []string) (err error) {
-	markdownMessage := WxMarkdownMessage{
-		MessageType: WxMessageTypeMarkdown,
-		MessageBody: WxMarkdownMessageBody{
+	markdownMessage := WxWorkRobotMarkdownMessage{
+		MessageType: WxWorkRobotMessageTypeMarkdown,
+		MessageBody: WxWorkRobotMarkdownMessageBody{
 			Content:             content,
 			MentionedList:       mentionedList,
 			MentionedMobileList: mentionedMobileList,
@@ -171,9 +171,9 @@ func (r *WxWorkRobot) SendMarkdownMessageWithMention(key, content string, mentio
 // SendImageMessage send the markdown message
 func (r *WxWorkRobot) SendImageMessage(key string, imageData []byte) (err error) {
 	imageHash := md5.Sum(imageData)
-	imageMessage := WxImageMessage{
-		MessageType: WxMessageTypeImage,
-		MessageBody: WxImageMessageBody{
+	imageMessage := WxWorkRobotImagMessage{
+		MessageType: WxWorkRobotMessageTypeImage,
+		MessageBody: WxWorkRobotImagMessageBody{
 			Base64: base64.StdEncoding.EncodeToString(imageData),
 			MD5:    fmt.Sprintf("%x", imageHash),
 		},
@@ -182,10 +182,10 @@ func (r *WxWorkRobot) SendImageMessage(key string, imageData []byte) (err error)
 }
 
 // SendNewsMessage send the news message
-func (r *WxWorkRobot) SendNewsMessage(key string, articles []WxNewsMessageArticle) (err error) {
-	newsMessage := WxNewsMessage{
-		MessageType: WxMessageTypeNews,
-		MessageBody: WxNewsMessageBody{
+func (r *WxWorkRobot) SendNewsMessage(key string, articles []WxWorkRobotNewsMessageArticle) (err error) {
+	newsMessage := WxWorkRobotNewsMessage{
+		MessageType: WxWorkRobotMessageTypeNews,
+		MessageBody: WxWorkRobotNewsMessageBody{
 			Articles: articles,
 		},
 	}
@@ -194,9 +194,9 @@ func (r *WxWorkRobot) SendNewsMessage(key string, articles []WxNewsMessageArticl
 
 // SendFileMessage send the file message
 func (r *WxWorkRobot) SendFileMessage(key, mediaID string) (err error) {
-	fileMessage := WxFileMessage{
-		MessageType: WxMessageTypeFile,
-		MessageBody: WxFileMessageBody{
+	fileMessage := WxWorkRobotFileMessage{
+		MessageType: WxWorkRobotMessageTypeFile,
+		MessageBody: WxWorkRobotFileMessageBody{
 			MediaID: mediaID,
 		},
 	}
@@ -227,13 +227,13 @@ func (r *WxWorkRobot) sendMessage(key string, messageObj interface{}) (err error
 	}
 	// parse response body
 	decoder := json.NewDecoder(resp.Body)
-	var wxMessageResp WxMessageResp
+	var wxMessageResp WxWorkRobotMessageResp
 	if decodeErr := decoder.Decode(&wxMessageResp); decodeErr != nil {
 		err = fmt.Errorf("parse response error, %s", decodeErr.Error())
 		return
 	}
 	if wxMessageResp.ErrCode != WxWorkRobotStatusOK {
-		err = fmt.Errorf("call wxwork api error, %d %s", wxMessageResp.ErrCode, wxMessageResp.ErrMessage)
+		err = fmt.Errorf("call wxwork robot api error, %d %s", wxMessageResp.ErrCode, wxMessageResp.ErrMessage)
 		return
 	}
 	return
@@ -258,7 +258,7 @@ func (r *WxWorkRobot) UploadFile(key string, fileBody []byte, fileName string) (
 		return
 	}
 
-	reqURL := fmt.Sprintf("%s?key=%s&type=%s", WxWorkRobotUploadFileAPI, key, WxMessageTypeFile)
+	reqURL := fmt.Sprintf("%s?key=%s&type=%s", WxWorkRobotUploadFileAPI, key, WxWorkRobotMessageTypeFile)
 	req, newErr := http.NewRequest(http.MethodPost, reqURL, respBodyBuffer)
 	if newErr != nil {
 		err = fmt.Errorf("create request error, %s", newErr.Error())
@@ -274,19 +274,19 @@ func (r *WxWorkRobot) UploadFile(key string, fileBody []byte, fileName string) (
 	defer resp.Body.Close()
 	// check http code
 	if resp.StatusCode != http.StatusOK {
-		err = fmt.Errorf("wxwork request error, %s", resp.Status)
+		err = fmt.Errorf("wxwork robot request error, %s", resp.Status)
 		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	// parse response body
 	decoder := json.NewDecoder(resp.Body)
-	var wxUploadFileResp WxUploadFileResp
+	var wxUploadFileResp WxWorkRobotUploadFileResp
 	if decodeErr := decoder.Decode(&wxUploadFileResp); decodeErr != nil {
 		err = fmt.Errorf("parse response error, %s", decodeErr.Error())
 		return
 	}
 	if wxUploadFileResp.ErrCode != WxWorkRobotStatusOK {
-		err = fmt.Errorf("call wxwork api error, %d %s", wxUploadFileResp.ErrCode, wxUploadFileResp.ErrMessage)
+		err = fmt.Errorf("call wxwork robot api error, %d %s", wxUploadFileResp.ErrCode, wxUploadFileResp.ErrMessage)
 		return
 	}
 

@@ -36,8 +36,8 @@ func TestWxWorkRobot_SendImageMessage(t *testing.T) {
 
 func TestWxWorkRobot_SendNewsMessage(t *testing.T) {
 	wxRobot := NewWxWorkRobot()
-	articles := []WxNewsMessageArticle{
-		WxNewsMessageArticle{
+	articles := []WxWorkRobotNewsMessageArticle{
+		WxWorkRobotNewsMessageArticle{
 			Title:       "i am a demo blog title",
 			Description: "i serve my master",
 			URL:         "http://www.oschina.net",
