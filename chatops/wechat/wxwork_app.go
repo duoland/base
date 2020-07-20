@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -15,6 +17,12 @@ import (
 
 // WxWorkAppGroupMessageAPI is the api to get the app access token
 const WxWorkAppTokenAPI = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
+
+// WxWorkAppUploadMediaAPI is the api to upload the wxwork app media
+const WxWorkAppUploadMediaAPI = "https://qyapi.weixin.qq.com/cgi-bin/media/upload"
+
+// WxWorkAppUploadImageAPI is the api to upload the wxwork app image
+const WxWorkAppUploadImageAPI = "https://qyapi.weixin.qq.com/cgi-bin/media/uploadimg"
 
 // WxWorkAppMessageAPI is the api to send messages to wxwork user/party/tag
 const WxWorkAppMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/message/send"
@@ -50,6 +58,13 @@ const (
 	WxWorkAppMessageTypeTaskCard          = "taskcard"
 )
 
+const (
+	WxWorkAppMediaTypeImage = "image"
+	WxWorkAppMediaTypeVoice = "voice"
+	WxWorkAppMediaTypeVideo = "video"
+	WxWorkAppMediaTypeFile  = "file"
+)
+
 type WxWorkAppTokenResp struct {
 	ErrCode     int    `json:"errcode"`
 	ErrMessage  string `json:"errmsg"`
@@ -68,6 +83,20 @@ type WxWorkAppMessageResp struct {
 type WxWorkAppGroupMessageResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
+}
+
+type WxWorkAppUploadMediaResp struct {
+	ErrCode    int    `json:"errcode"`
+	ErrMessage string `json:"errmsg"`
+	Type       string `json:"type"`
+	MediaID    string `json:"media_id"`
+	CreatedAt  string `json:"created_at"`
+}
+
+type WxWorkAppUploadImageResp struct {
+	ErrCode    int    `json:"errcode"`
+	ErrMessage string `json:"errmsg"`
+	URL        string `json:"url"`
 }
 
 type WxWorkAppCreateGroupResp struct {
@@ -495,6 +524,19 @@ func (r *WxWorkApp) SendTaskCardMessage(userIDList []string, partyIDList []strin
 	return r.sendMessage(&messageObj)
 }
 
+// See doc https://work.weixin.qq.com/api/doc/90000/90135/90236
+func (r *WxWorkApp) sendMessage(messageObj interface{}) (messageResp WxWorkAppMessageResp, err error) {
+	err = r.fireRequest(http.MethodPost, WxWorkAppMessageAPI, nil, messageObj, &messageResp)
+	if err != nil {
+		return
+	}
+	if messageResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
+		return
+	}
+	return
+}
+
 // CreateGroupChat create a new group chat
 func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []string) (newChatID string, err error) {
 	createGroupReqObject := make(map[string]interface{})
@@ -644,7 +686,7 @@ func (r *WxWorkApp) SendGroupTextCardMessage(chatID, title, description, url, bt
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupNewsMessage(chatID, articles []WxWorkAppNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
+func (r *WxWorkApp) SendGroupNewsMessage(chatID string, articles []WxWorkAppNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeNews
@@ -657,7 +699,7 @@ func (r *WxWorkApp) SendGroupNewsMessage(chatID, articles []WxWorkAppNewsMessage
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupMpNewsMessage(chatID, articles []WxWorkAppMpNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
+func (r *WxWorkApp) SendGroupMpNewsMessage(chatID string, articles []WxWorkAppMpNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeMpNews
@@ -707,19 +749,6 @@ func (r *WxWorkApp) refreshAccessToken() (err error) {
 	return
 }
 
-// See doc https://work.weixin.qq.com/api/doc/90000/90135/90236
-func (r *WxWorkApp) sendMessage(messageObj interface{}) (messageResp WxWorkAppMessageResp, err error) {
-	err = r.fireRequest(http.MethodPost, WxWorkAppMessageAPI, nil, messageObj, &messageResp)
-	if err != nil {
-		return
-	}
-	if messageResp.ErrCode != WxWorkAppStatusOK {
-		err = fmt.Errorf("call wxwork app message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
-		return
-	}
-	return
-}
-
 // See doc https://work.weixin.qq.com/api/doc/90000/90135/90248
 func (r *WxWorkApp) sendGroupMessage(messageObj interface{}) (err error) {
 	var messageResp WxWorkAppGroupMessageResp
@@ -729,6 +758,108 @@ func (r *WxWorkApp) sendGroupMessage(messageObj interface{}) (err error) {
 	}
 	if messageResp.ErrCode != WxWorkAppStatusOK {
 		err = fmt.Errorf("call wxwork app group message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
+		return
+	}
+	return
+}
+
+func (r *WxWorkApp) UploadMedia(fileBody []byte, fileName, fileType string) (mediaID string, createdAt int64, err error) {
+	var uploadMediaResp WxWorkAppUploadMediaResp
+	err = r.uploadFile(http.MethodPost, WxWorkAppUploadMediaAPI, map[string]string{"type": fileType}, fileBody, fileName, &uploadMediaResp)
+	if err != nil {
+		return
+	}
+	if uploadMediaResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app upload media api error, %d %s", uploadMediaResp.ErrCode, uploadMediaResp.ErrMessage)
+		return
+	}
+	// set fields
+	mediaID = uploadMediaResp.MediaID
+	createdAt, _ = strconv.ParseInt(uploadMediaResp.CreatedAt, 10, 64)
+	return
+}
+
+func (r *WxWorkApp) UploadImage(fileBody []byte, fileName string) (imageURL string, err error) {
+	var uploadImageResp WxWorkAppUploadImageResp
+	err = r.uploadFile(http.MethodPost, WxWorkAppUploadImageAPI, nil, fileBody, fileName, &uploadImageResp)
+	if err != nil {
+		return
+	}
+	if uploadImageResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app upload image api error, %d %s", uploadImageResp.ErrCode, uploadImageResp.ErrMessage)
+		return
+	}
+	// set fields
+	imageURL = uploadImageResp.URL
+	return
+}
+
+func (r *WxWorkApp) uploadFile(reqMethod, reqURL string, reqParams map[string]string, fileBody []byte, fileName string, wxUploadFileResp interface{}) (err error) {
+	// check the token expired or not
+	if r.accessToken == "" || r.IsAccessTokenExpired() {
+		r.tokenRefreshLock.Lock()
+		if r.accessToken == "" || r.IsAccessTokenExpired() {
+			err = r.refreshAccessToken()
+		}
+		r.tokenRefreshLock.Unlock()
+		if err != nil {
+			err = fmt.Errorf("refresh access token error, %s", err.Error())
+			return
+		}
+	}
+	// check params
+	queryString := url.Values{}
+	queryString.Add("access_token", r.accessToken)
+	if reqParams != nil {
+		for k, v := range reqParams {
+			queryString.Add(k, v)
+		}
+	}
+
+	reqURL = fmt.Sprintf("%s?%s", reqURL, queryString.Encode())
+	// create body
+	respBodyBuffer := bytes.NewBuffer(nil)
+	defer respBodyBuffer.Reset()
+	multipartWriter := multipart.NewWriter(respBodyBuffer)
+	// add form data
+	formFileWriter, createErr := multipartWriter.CreateFormFile("media", fileName)
+	if createErr != nil {
+		err = fmt.Errorf("create form file error, %s", createErr.Error())
+		return
+	}
+	if _, writeErr := formFileWriter.Write(fileBody); writeErr != nil {
+		err = fmt.Errorf("write form file error, %s", writeErr.Error())
+		return
+	}
+	if closeErr := multipartWriter.Close(); closeErr != nil {
+		err = fmt.Errorf("close form file error, %s", closeErr.Error())
+		return
+	}
+	// create new request
+	req, newErr := http.NewRequest(reqMethod, reqURL, respBodyBuffer)
+	if newErr != nil {
+		err = fmt.Errorf("create request error, %s", newErr.Error())
+		return
+	}
+	// set multi-part header
+	req.Header.Set("Content-Type", multipartWriter.FormDataContentType())
+	resp, getErr := r.client.Do(req)
+	if getErr != nil {
+		err = fmt.Errorf("get response error, %s", getErr.Error())
+		io.Copy(ioutil.Discard, resp.Body)
+		return
+	}
+	defer resp.Body.Close()
+	// check http code
+	if resp.StatusCode != http.StatusOK {
+		err = fmt.Errorf("wxwork app request error, %s", resp.Status)
+		io.Copy(ioutil.Discard, resp.Body)
+		return
+	}
+	// parse response body
+	decoder := json.NewDecoder(resp.Body)
+	if decodeErr := decoder.Decode(&wxUploadFileResp); decodeErr != nil {
+		err = fmt.Errorf("parse response error, %s", decodeErr.Error())
 		return
 	}
 	return

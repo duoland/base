@@ -242,6 +242,7 @@ func (r *WxWorkRobot) sendMessage(key string, messageObj interface{}) (err error
 // UploadFile upload the media file
 func (r *WxWorkRobot) UploadFile(key string, fileBody []byte, fileName string) (mediaID string, createdAt int64, err error) {
 	respBodyBuffer := bytes.NewBuffer(nil)
+	defer respBodyBuffer.Reset()
 	multipartWriter := multipart.NewWriter(respBodyBuffer)
 	// add form data
 	formFileWriter, createErr := multipartWriter.CreateFormFile("media", fileName)
