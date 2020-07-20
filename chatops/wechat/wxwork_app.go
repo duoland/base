@@ -15,11 +15,18 @@ import (
 const WxWorkAppTokenAPI = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
 
 // WxWorkAppMessageAPI is the api to send the app messages
-const WxWorkAppMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send"
+const WxWorkAppMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/send"
+
+// WxWorkAppCreateGroupAPI is the api to create the wxwork group
+const WxWorkAppCreateGroupAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/create"
 
 // WxWorkAppTimeout is the wxwork app default timeout
 const WxWorkAppTimeout = time.Second * 30
 const WxWorkAppStatusOK = 0
+
+const (
+	WxWorkAppMessageTypeText = "text"
+)
 
 type WxWorkAppTokenResp struct {
 	ErrCode     int    `json:"errcode"`
@@ -31,6 +38,12 @@ type WxWorkAppTokenResp struct {
 type WxWorkAppMessageResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
+}
+
+type WxWorkAppCreateGroupResp struct {
+	ErrCode    int    `json:"errcode"`
+	ErrMessage string `json:"errmsg"`
+	ChatID     string `json:"chatid"`
 }
 
 type WxWorkApp struct {
@@ -63,8 +76,39 @@ func NewWxWorkAppWithTimeout(corpID, corpSecret, agentID string, timeout time.Du
 func NewWxWorkAppWithClient(corpID, corpSecret, agentID string, client *http.Client) *WxWorkApp {
 	return &WxWorkApp{corpID: corpID, corpSecret: corpSecret, agentID: agentID, client: client, tokenRefreshLock: sync.RWMutex{}}
 }
-func (r *WxWorkApp) SendTextMessage() (err error) {
 
+func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []string) (newChatID string, err error) {
+	createGroupReqObject := make(map[string]interface{})
+	createGroupReqObject["name"] = name
+	createGroupReqObject["chatid"] = chatID
+	createGroupReqObject["owner"] = ownerID
+	createGroupReqObject["userlist"] = userIDList
+	var createGroupResp WxWorkAppCreateGroupResp
+	err = r.fireRequest(WxWorkAppCreateGroupAPI, &createGroupReqObject, &createGroupResp)
+	if err != nil {
+		return
+	}
+	if createGroupResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app create group api error, %d %s", createGroupResp.ErrCode, createGroupResp.ErrMessage)
+		return
+	}
+	newChatID = createGroupResp.ChatID
+	return
+}
+
+func (r *WxWorkApp) SendGroupTextMessage(chatID, content string, safe bool) (err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["chatid"] = chatID
+	messageObj["msgtype"] = WxWorkAppMessageTypeText
+	messageObj["text"] = map[string]string{
+		"content": content,
+	}
+	if safe {
+		messageObj["safe"] = 1
+	} else {
+		messageObj["safe"] = 0
+	}
+	return r.sendMessage(&messageObj)
 }
 
 func (r *WxWorkApp) refreshAccessToken() (err error) {
@@ -105,6 +149,19 @@ func (r *WxWorkApp) refreshAccessToken() (err error) {
 }
 
 func (r *WxWorkApp) sendMessage(messageObj interface{}) (err error) {
+	var messageResp WxWorkAppMessageResp
+	err = r.fireRequest(WxWorkAppMessageAPI, messageObj, &messageResp)
+	if err != nil {
+		return
+	}
+	if messageResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
+		return
+	}
+	return
+}
+
+func (r *WxWorkApp) fireRequest(reqURL string, reqBodyObject interface{}, respObject interface{}) (err error) {
 	// check the token expired or not
 	if r.accessToken == "" || r.IsAccessTokenExpired() {
 		r.tokenRefreshLock.Lock()
@@ -117,8 +174,8 @@ func (r *WxWorkApp) sendMessage(messageObj interface{}) (err error) {
 			return
 		}
 	}
-	reqURL := fmt.Sprintf("%s?access_token=%s", WxWorkAppMessageAPI, r.accessToken)
-	reqBody, _ := json.Marshal(messageObj)
+	reqURL = fmt.Sprintf("%s?access_token=%s", reqURL, r.accessToken)
+	reqBody, _ := json.Marshal(reqBodyObject)
 
 	req, newErr := http.NewRequest(http.MethodPost, reqURL, bytes.NewReader(reqBody))
 	if newErr != nil {
@@ -141,13 +198,8 @@ func (r *WxWorkApp) sendMessage(messageObj interface{}) (err error) {
 	}
 	// parse response body
 	decoder := json.NewDecoder(resp.Body)
-	var wxMessageResp WxWorkAppMessageResp
-	if decodeErr := decoder.Decode(&wxMessageResp); decodeErr != nil {
+	if decodeErr := decoder.Decode(respObject); decodeErr != nil {
 		err = fmt.Errorf("parse response error, %s", decodeErr.Error())
-		return
-	}
-	if wxMessageResp.ErrCode != WxWorkAppStatusOK {
-		err = fmt.Errorf("call wxwork app api error, %d %s", wxMessageResp.ErrCode, wxMessageResp.ErrMessage)
 		return
 	}
 	return
