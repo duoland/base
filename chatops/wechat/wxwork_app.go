@@ -8,15 +8,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
 
-// WxWorkAppMessageAPI is the api to get the app access token
+// WxWorkAppGroupMessageAPI is the api to get the app access token
 const WxWorkAppTokenAPI = "https://qyapi.weixin.qq.com/cgi-bin/gettoken"
 
-// WxWorkAppMessageAPI is the api to send the app messages
-const WxWorkAppMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/send"
+// WxWorkAppMessageAPI is the api to send messages to wxwork user/party/tag
+const WxWorkAppMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/message/send"
+
+// WxWorkAppGroupMessageAPI is the api to send messages to wxwork group
+const WxWorkAppGroupMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/send"
 
 // WxWorkAppCreateGroupAPI is the api to create the wxwork group
 const WxWorkAppCreateGroupAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/create"
@@ -41,6 +45,9 @@ const (
 	WxWorkAppMessageTypeNews     = "news"
 	WxWorkAppMessageTypeMpNews   = "mpnews"
 	WxWorkAppMessageTypeMarkdown = "markdown"
+	// The following two message type are only supported by simple message
+	WxWorkAppMessageTypeMiniProgramNotice = "miniprogram_notice"
+	WxWorkAppMessageTypeTaskCard          = "taskcard"
 )
 
 type WxWorkAppTokenResp struct {
@@ -51,6 +58,14 @@ type WxWorkAppTokenResp struct {
 }
 
 type WxWorkAppMessageResp struct {
+	ErrCode      int    `json:"errcode"`
+	ErrMessage   string `json:"errmsg"`
+	InvalidUser  string `json:"invaliduser"`
+	InvalidParty string `json:"invalidparty"`
+	InvalidTag   string `json:"invalidtag"`
+}
+
+type WxWorkAppGroupMessageResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
 }
@@ -77,6 +92,13 @@ type WxWorkAppGroup struct {
 	Name     string   `json:"name"`
 	Owner    string   `json:"owner"`
 	UserList []string `json:"userlist"`
+}
+
+type WxWorkAppMessageSendOptions struct {
+	Safe                   bool
+	EnableIDTrans          bool
+	EnableDuplicateCheck   bool
+	DuplicateCheckInterval int
 }
 
 type WxWorkAppNewsMessageArticle struct {
@@ -126,6 +148,274 @@ func NewWxWorkAppWithClient(corpID, corpSecret, agentID string, client *http.Cli
 	return &WxWorkApp{corpID: corpID, corpSecret: corpSecret, agentID: agentID, client: client, tokenRefreshLock: sync.RWMutex{}}
 }
 
+func (r *WxWorkApp) SendTextMessage(userIDList []string, partyIDList []string, tagIDList []string, content string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeText
+	messageObj["agentid"] = r.agentID
+	messageObj["text"] = map[string]string{
+		"content": content,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendMarkdownMessage(userIDList []string, partyIDList []string, tagIDList []string, content string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeMarkdown
+	messageObj["agentid"] = r.agentID
+	messageObj["markdown"] = map[string]string{
+		"content": content,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendImageMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeImage
+	messageObj["agentid"] = r.agentID
+	messageObj["image"] = map[string]string{
+		"media_id": mediaID,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendVoiceMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeVoice
+	messageObj["agentid"] = r.agentID
+	messageObj["voice"] = map[string]string{
+		"media_id": mediaID,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendVideoMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID, mediaTitle, mediaDescription string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeVideo
+	messageObj["agentid"] = r.agentID
+	messageObj["video"] = map[string]string{
+		"media_id":    mediaID,
+		"title":       mediaTitle,
+		"description": mediaDescription,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendFileMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeFile
+	messageObj["agentid"] = r.agentID
+	messageObj["file"] = map[string]string{
+		"media_id": mediaID,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendTextCardMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID, title, description, url, btnText string,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeTextCard
+	messageObj["agentid"] = r.agentID
+	messageObj["textcard"] = map[string]string{
+		"media_id":    mediaID,
+		"title":       title,
+		"description": description,
+		"url":         url,
+		"btntxt":      btnText,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendNewsMessage(userIDList []string, partyIDList []string, tagIDList []string, articles []WxWorkAppNewsMessageArticle,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeNews
+	messageObj["agentid"] = r.agentID
+	messageObj["news"] = map[string]interface{}{
+		"articles": articles,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendMpNewsMessage(userIDList []string, partyIDList []string, tagIDList []string, articles []WxWorkAppMpNewsMessageArticle,
+	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeMpNews
+	messageObj["agentid"] = r.agentID
+	messageObj["mpnews"] = map[string]interface{}{
+		"articles": articles,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+// CreateGroupChat create a new group chat
 func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []string) (newChatID string, err error) {
 	createGroupReqObject := make(map[string]interface{})
 	createGroupReqObject["name"] = name
@@ -178,67 +468,59 @@ func (r *WxWorkApp) GetGroupChat(chatID string) (group WxWorkAppGroup, err error
 	return
 }
 
-func (r *WxWorkApp) SendGroupTextMessage(chatID, content string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupTextMessage(chatID, content string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeText
 	messageObj["text"] = map[string]string{
 		"content": content,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupMarkdownMessage(chatID, content string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupMarkdownMessage(chatID, content string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeMarkdown
 	messageObj["markdown"] = map[string]string{
 		"content": content,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupImageMessage(chatID, mediaID string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupImageMessage(chatID, mediaID string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeImage
 	messageObj["image"] = map[string]string{
 		"media_id": mediaID,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupVoiceMessage(chatID, mediaID string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupVoiceMessage(chatID, mediaID string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeVoice
 	messageObj["voice"] = map[string]string{
 		"media_id": mediaID,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupVideoMessage(chatID, mediaID, mediaTitle, mediaDescription string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupVideoMessage(chatID, mediaID, mediaTitle, mediaDescription string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeVideo
@@ -247,30 +529,26 @@ func (r *WxWorkApp) SendGroupVideoMessage(chatID, mediaID, mediaTitle, mediaDesc
 		"title":       mediaTitle,
 		"description": mediaDescription,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupFileMessage(chatID, mediaID string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupFileMessage(chatID, mediaID string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeFile
 	messageObj["file"] = map[string]string{
 		"media_id": mediaID,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupTextCardMessage(chatID, title, description, url, btnText string, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupTextCardMessage(chatID, title, description, url, btnText string, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeTextCard
@@ -280,42 +558,36 @@ func (r *WxWorkApp) SendGroupTextCardMessage(chatID, title, description, url, bt
 		"url":         url,
 		"btntext":     btnText,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupNewsMessage(chatID, articles []WxWorkAppNewsMessageArticle, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupNewsMessage(chatID, articles []WxWorkAppNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeNews
 	messageObj["news"] = map[string]interface{}{
 		"articles": articles,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendGroupMpNewsMessage(chatID, articles []WxWorkAppMpNewsMessageArticle, safe bool) (err error) {
+func (r *WxWorkApp) SendGroupMpNewsMessage(chatID, articles []WxWorkAppMpNewsMessageArticle, options *WxWorkAppMessageSendOptions) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["chatid"] = chatID
 	messageObj["msgtype"] = WxWorkAppMessageTypeMpNews
 	messageObj["mpnews"] = map[string]interface{}{
 		"articles": articles,
 	}
-	if safe {
+	if options != nil && options.Safe {
 		messageObj["safe"] = 1
-	} else {
-		messageObj["safe"] = 0
 	}
-	return r.sendMessage(&messageObj)
+	return r.sendGroupMessage(&messageObj)
 }
 
 func (r *WxWorkApp) refreshAccessToken() (err error) {
@@ -355,15 +627,28 @@ func (r *WxWorkApp) refreshAccessToken() (err error) {
 	return
 }
 
-// See doc https://work.weixin.qq.com/api/doc/90000/90135/90248
-func (r *WxWorkApp) sendMessage(messageObj interface{}) (err error) {
-	var messageResp WxWorkAppMessageResp
+// See doc https://work.weixin.qq.com/api/doc/90000/90135/90236
+func (r *WxWorkApp) sendMessage(messageObj interface{}) (messageResp WxWorkAppMessageResp, err error) {
 	err = r.fireRequest(http.MethodPost, WxWorkAppMessageAPI, nil, messageObj, &messageResp)
 	if err != nil {
 		return
 	}
 	if messageResp.ErrCode != WxWorkAppStatusOK {
 		err = fmt.Errorf("call wxwork app message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
+		return
+	}
+	return
+}
+
+// See doc https://work.weixin.qq.com/api/doc/90000/90135/90248
+func (r *WxWorkApp) sendGroupMessage(messageObj interface{}) (err error) {
+	var messageResp WxWorkAppGroupMessageResp
+	err = r.fireRequest(http.MethodPost, WxWorkAppGroupMessageAPI, nil, messageObj, &messageResp)
+	if err != nil {
+		return
+	}
+	if messageResp.ErrCode != WxWorkAppStatusOK {
+		err = fmt.Errorf("call wxwork app group message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
 		return
 	}
 	return
