@@ -117,6 +117,19 @@ type WxWorkAppMpNewsMessageArticle struct {
 	Digest           string `json:"digest"`
 }
 
+type WxWorkAppMiniProgramNoticeMessageItem struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type WxWorkAppTaskCardMessageButton struct {
+	Key         string `json:"key"`
+	Name        string `json:"name"`
+	ReplaceName string `json:"replace_name"`
+	Color       string `json:"color,omitempty"`
+	IsBold      bool   `json:"is_bold,omitempty"`
+}
+
 type WxWorkApp struct {
 	agentID          string
 	corpID           string // see doc https://work.weixin.qq.com/api/doc/90000/90135/91039
@@ -396,6 +409,73 @@ func (r *WxWorkApp) SendMpNewsMessage(userIDList []string, partyIDList []string,
 	messageObj["agentid"] = r.agentID
 	messageObj["mpnews"] = map[string]interface{}{
 		"articles": articles,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendMiniProgramNoticeMessage(userIDList []string, partyIDList []string, tagIDList []string, appID, page, title, description string,
+	emphisFirstItem bool, contentItems []WxWorkAppMiniProgramNoticeMessageItem, options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeMiniProgramNotice
+	messageObj["agentid"] = r.agentID
+	messageObj["miniprogram_notice"] = map[string]interface{}{
+		"appid":               appID,
+		"page":                page,
+		"title":               title,
+		"description":         description,
+		"emphasis_first_item": emphisFirstItem,
+		"content_item":        contentItems,
+	}
+	// add options if specified
+	if options != nil {
+		if options.Safe {
+			messageObj["safe"] = 1
+		}
+		if options.EnableIDTrans {
+			messageObj["enable_id_trans"] = 1
+		}
+		if options.EnableDuplicateCheck {
+			messageObj["enable_duplicate_check"] = 1
+		}
+		if options.DuplicateCheckInterval > 0 {
+			messageObj["duplicate_check_interval"] = options.DuplicateCheckInterval
+		}
+	}
+	return r.sendMessage(&messageObj)
+}
+
+func (r *WxWorkApp) SendTaskCardMessage(userIDList []string, partyIDList []string, tagIDList []string, taskID, title, description, url string,
+	buttons []WxWorkAppTaskCardMessageButton, options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
+	messageObj := make(map[string]interface{})
+	messageObj["touser"] = strings.Join(userIDList, "|")
+	messageObj["toparty"] = strings.Join(partyIDList, "|")
+	messageObj["totag"] = strings.Join(tagIDList, "|")
+	messageObj["msgtype"] = WxWorkAppMessageTypeTaskCard
+	messageObj["agentid"] = r.agentID
+	messageObj["taskcard"] = map[string]interface{}{
+		"task_id":     taskID,
+		"title":       title,
+		"description": description,
+		"url":         url,
+		"btn":         buttons,
 	}
 	// add options if specified
 	if options != nil {
