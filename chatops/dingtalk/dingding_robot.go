@@ -66,8 +66,8 @@ type DingDingRobotMentionAt struct {
 }
 
 type DingDingSecuritySettings struct {
-	AccessToken               string
-	AdditionalSignatureSecret string
+	AccessToken string
+	SecureToken string
 }
 
 type DingDingRobotLinkMessage struct {
@@ -162,10 +162,10 @@ func (r *DingDingRobot) SendFeedCardMessage(securitySettings *DingDingSecuritySe
 func (r *DingDingRobot) sendMessage(securitySettings *DingDingSecuritySettings, messageObj interface{}) (err error) {
 	reqParams := url.Values{}
 	reqParams.Add("access_token", securitySettings.AccessToken)
-	if securitySettings.AdditionalSignatureSecret != "" {
+	if securitySettings.SecureToken != "" {
 		tsNow := time.Now().UnixNano() / 1000000
-		dataToSign := fmt.Sprintf("%d\n%s", tsNow, securitySettings.AdditionalSignatureSecret)
-		sign := base64.StdEncoding.EncodeToString(hash.HmacSha256([]byte(dataToSign), []byte(securitySettings.AdditionalSignatureSecret)))
+		dataToSign := fmt.Sprintf("%d\n%s", tsNow, securitySettings.SecureToken)
+		sign := base64.StdEncoding.EncodeToString(hash.HmacSha256([]byte(dataToSign), []byte(securitySettings.SecureToken)))
 		reqParams.Add("timestamp", fmt.Sprintf("%d", tsNow))
 		reqParams.Add("sign", sign)
 	}
