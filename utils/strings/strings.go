@@ -9,14 +9,13 @@ func SliceContains(slice []string, s string) bool {
 	return false
 }
 
-
 // ReverseRunes reverse a string runes and return the result
 func ReverseRunes(str string) (output string) {
 	if str == "" {
 		return
 	}
 
-	runes:=[]rune(str)
+	runes := []rune(str)
 
 	buf := make([]rune, 0, len(runes))
 	for i := len(runes) - 1; i >= 0; i-- {
@@ -24,4 +23,12 @@ func ReverseRunes(str string) (output string) {
 	}
 	output = string(buf)
 	return
+}
+
+func IsNilOrEmpty(s *string) bool {
+	return s == nil || *s == ""
+}
+
+func IsEmpty(s string) bool {
+	return s == ""
 }
