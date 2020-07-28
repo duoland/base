@@ -102,6 +102,17 @@ type WxWorkAppUploadImageResp struct {
 	URL        string `json:"url"`
 }
 
+type WxWorkAppCreateGroupOptions struct {
+	ChatID string
+}
+
+type WxWorkAppUpdateGroupOptions struct {
+	Name        string
+	Owner       string
+	AddUserList []string
+	DelUserList []string
+}
+
 type WxWorkAppCreateGroupResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
@@ -545,12 +556,14 @@ func (r *WxWorkApp) sendMessage(messageObj interface{}) (messageResp WxWorkAppMe
 }
 
 // CreateGroupChat create a new group chat
-func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []string) (newChatID string, err error) {
+func (r *WxWorkApp) CreateGroupChat(name, ownerID string, userIDList []string, options *WxWorkAppCreateGroupOptions) (newChatID string, err error) {
 	createGroupReqObject := make(map[string]interface{})
 	createGroupReqObject["name"] = name
-	createGroupReqObject["chatid"] = chatID
 	createGroupReqObject["owner"] = ownerID
 	createGroupReqObject["userlist"] = userIDList
+	if options != nil {
+		createGroupReqObject["chatid"] = options.ChatID
+	}
 	var createGroupResp WxWorkAppCreateGroupResp
 	err = r.fireRequest(http.MethodPost, WxWorkAppCreateGroupAPI, nil, &createGroupReqObject, &createGroupResp)
 	if err != nil {
@@ -568,13 +581,15 @@ func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []s
 	return
 }
 
-func (r *WxWorkApp) UpdateGroupChat(name, chatID, ownerID string, addUserList []string, delUserList []string) (err error) {
+func (r *WxWorkApp) UpdateGroupChat(chatID string, options *WxWorkAppUpdateGroupOptions) (err error) {
 	updateGroupReqObject := make(map[string]interface{})
-	updateGroupReqObject["name"] = name
 	updateGroupReqObject["chatid"] = chatID
-	updateGroupReqObject["owner"] = ownerID
-	updateGroupReqObject["add_user_list"] = addUserList
-	updateGroupReqObject["del_user_list"] = delUserList
+	if options != nil {
+		updateGroupReqObject["name"] = options.Name
+		updateGroupReqObject["owner"] = options.Owner
+		updateGroupReqObject["add_user_list"] = options.AddUserList
+		updateGroupReqObject["del_user_list"] = options.DelUserList
+	}
 	var updateGroupResp WxWorkAppUpdateGroupResp
 	err = r.fireRequest(http.MethodPost, WxWorkAppUpdateGroupAPI, nil, &updateGroupReqObject, &updateGroupResp)
 	if err != nil {

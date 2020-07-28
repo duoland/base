@@ -7,7 +7,7 @@ import (
 
 var chatID = "test20200207"
 var corpID = "qqfc50e757c8e5ee4a"
-var corpSecret = "rnrsvlPyjUstiIveyHmhuSJazEgMFx8bDq88s3yD6nk"
+var corpSecret = "nrrsvlPyjUstiIveyHmhuSJazEgMFx8bDq99s3yD6nk"
 var agentID = "1000002"
 var userIDList = []string{"jinxinxin001", "jinchengxi001"}
 var partyIDList = []string{}
@@ -158,7 +158,8 @@ func TestWxWorkApp_UploadMedia(t *testing.T) {
 
 func TestWxWorkApp_CreateGroupChat(t *testing.T) {
 	wxworkApp := NewWxWorkApp(corpID, corpSecret, agentID)
-	newChatID, err := wxworkApp.CreateGroupChat("一个简单的测试群", chatID, "jinxinxin001", []string{"jinchengxi001", "jinxinxin001"})
+	newChatID, err := wxworkApp.CreateGroupChat("一个简单的测试群", "jinxinxin001", []string{"jinchengxi001", "jinxinxin001"},
+		&WxWorkAppCreateGroupOptions{ChatID: chatID})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +169,7 @@ func TestWxWorkApp_CreateGroupChat(t *testing.T) {
 func TestWxWorkApp_UpdateGroupChat(t *testing.T) {
 	wxworkApp := NewWxWorkApp(corpID, corpSecret, agentID)
 	name := "一个不简单的测试群"
-	err := wxworkApp.UpdateGroupChat(name, chatID, "jinxinxin001", []string{"jinchengxi001"}, []string{})
+	err := wxworkApp.UpdateGroupChat(chatID, &WxWorkAppUpdateGroupOptions{Name: name})
 	if err != nil {
 		t.Fatal(err)
 	}
