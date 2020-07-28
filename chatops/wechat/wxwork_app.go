@@ -43,6 +43,9 @@ const WxWorkAppGetGroupAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/get"
 const WxWorkAppTimeout = time.Second * 30
 const WxWorkAppStatusOK = 0
 
+// See doc https://work.weixin.qq.com/api/doc/90000/90139/90313
+const WxWorkCodeAccessTokenExpired = 42001
+
 const (
 	WxWorkAppMessageTypeText     = "text"
 	WxWorkAppMessageTypeImage    = "image"
@@ -531,6 +534,10 @@ func (r *WxWorkApp) sendMessage(messageObj interface{}) (messageResp WxWorkAppMe
 		return
 	}
 	if messageResp.ErrCode != WxWorkAppStatusOK {
+		if messageResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
 		return
 	}
@@ -550,6 +557,10 @@ func (r *WxWorkApp) CreateGroupChat(name, chatID, ownerID string, userIDList []s
 		return
 	}
 	if createGroupResp.ErrCode != WxWorkAppStatusOK {
+		if createGroupResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app create group api error, %d %s", createGroupResp.ErrCode, createGroupResp.ErrMessage)
 		return
 	}
@@ -570,6 +581,10 @@ func (r *WxWorkApp) UpdateGroupChat(name, chatID, ownerID string, addUserList []
 		return
 	}
 	if updateGroupResp.ErrCode != WxWorkAppStatusOK {
+		if updateGroupResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app update group api error, %d %s", updateGroupResp.ErrCode, updateGroupResp.ErrMessage)
 		return
 	}
@@ -583,6 +598,10 @@ func (r *WxWorkApp) GetGroupChat(chatID string) (group WxWorkAppGroup, err error
 		return
 	}
 	if getGroupResp.ErrCode != WxWorkAppStatusOK {
+		if getGroupResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app get group api error, %d %s", getGroupResp.ErrCode, getGroupResp.ErrMessage)
 		return
 	}
@@ -757,6 +776,10 @@ func (r *WxWorkApp) sendGroupMessage(messageObj interface{}) (err error) {
 		return
 	}
 	if messageResp.ErrCode != WxWorkAppStatusOK {
+		if messageResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app group message api error, %d %s", messageResp.ErrCode, messageResp.ErrMessage)
 		return
 	}
@@ -770,6 +793,10 @@ func (r *WxWorkApp) UploadMedia(fileBody []byte, fileName, fileType string) (med
 		return
 	}
 	if uploadMediaResp.ErrCode != WxWorkAppStatusOK {
+		if uploadMediaResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app upload media api error, %d %s", uploadMediaResp.ErrCode, uploadMediaResp.ErrMessage)
 		return
 	}
@@ -786,6 +813,10 @@ func (r *WxWorkApp) UploadImage(fileBody []byte, fileName string) (imageURL stri
 		return
 	}
 	if uploadImageResp.ErrCode != WxWorkAppStatusOK {
+		if uploadImageResp.ErrCode == WxWorkCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
 		err = fmt.Errorf("call wxwork app upload image api error, %d %s", uploadImageResp.ErrCode, uploadImageResp.ErrMessage)
 		return
 	}
