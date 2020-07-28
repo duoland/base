@@ -18,7 +18,9 @@ import (
 const DingDingRobotMessageAPI = "https://oapi.dingtalk.com/robot/send"
 
 // DingDingRobotTimeout is the dingding robot default timeout
-const DingDingRobotTimeout = time.Second * 30
+const DingDingRobotTimeout = time.Second * 10
+
+// DingDingRobotStatusOK is the ok status of api call
 const DingDingRobotStatusOK = 0
 
 const (
@@ -30,8 +32,8 @@ const (
 )
 
 const (
-	DingDingActionCardMessageBtnOrientationVertical   = "0"
-	DingDingActionCardMessageBtnOrientationHorizontal = "1"
+	DingDingActionCardMessageButtonOrientationVertical   = "0"
+	DingDingActionCardMessageButtonOrientationHorizontal = "1"
 )
 
 type DingDingRobotMessageResp struct {
@@ -83,14 +85,14 @@ type DingDingRobotMarkdownMessage struct {
 }
 
 type DingDingRobotActionCardMessage struct {
-	Title          string `json:"title"`
-	Text           string `json:"text"`
-	BtnOrientation string `json:"btnOrientation"`
+	Title string `json:"title"`
+	Text  string `json:"text"`
 	// single jump action card fields
 	SingleTitle string `json:"singleTitle,omitempty"`
 	SingleURL   string `json:"singleURL,omitempty"`
-	// standalone jump action card fiels
-	Btns []DingDingRobotActionCardButton `json:"btns,omitempty"`
+	// standalone jump action card fields
+	ButtonOrientation string                          `json:"btnOrientation"`
+	Buttons           []DingDingRobotActionCardButton `json:"btns,omitempty"`
 }
 
 type DingDingRobotActionCardButton struct {
@@ -123,7 +125,8 @@ func (r *DingDingRobot) SendMarkdownMessage(securitySettings *DingDingSecuritySe
 	return r.SendMarkdownMessageWithMention(securitySettings, markdownMessage, nil, false)
 }
 
-func (r *DingDingRobot) SendMarkdownMessageWithMention(securitySettings *DingDingSecuritySettings, markdownMessage *DingDingRobotMarkdownMessage, mentionedMobileList []string, atAll bool) (err error) {
+func (r *DingDingRobot) SendMarkdownMessageWithMention(securitySettings *DingDingSecuritySettings, markdownMessage *DingDingRobotMarkdownMessage,
+	mentionedMobileList []string, atAll bool) (err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["msgtype"] = DingDingRobotMessageTypeMarkdown
 	messageObj["markdown"] = markdownMessage
@@ -131,8 +134,6 @@ func (r *DingDingRobot) SendMarkdownMessageWithMention(securitySettings *DingDin
 		AtMobiles: mentionedMobileList,
 		IsAtAll:   atAll,
 	}
-	data, _ := json.Marshal(&messageObj)
-	fmt.Println(string(data))
 	return r.sendMessage(securitySettings, &messageObj)
 }
 

@@ -63,9 +63,9 @@ func TestDingDingRobot_SendActionCardMessage(t *testing.T) {
 		Text: `![screenshot](https://gw.alicdn.com/tfs/TB1ut3xxbsrBKNjSZFpXXcXhFXa-846-786.png) 
 ### 乔布斯 20 年前想打造的苹果咖啡厅
 Apple Store 的设计正从原来满满的科技感走向生活化，而其生活化的走向其实可以追溯到 20 年前苹果一个建立咖啡馆的计划`,
-		BtnOrientation: DingDingActionCardMessageBtnOrientationVertical,
-		SingleTitle:    "Read More>>",
-		SingleURL:      "http://www.oschina.net",
+		ButtonOrientation: DingDingActionCardMessageButtonOrientationVertical,
+		SingleTitle:       "Read More>>",
+		SingleURL:         "http://www.oschina.net",
 	}
 	if err := ddRobot.SendActionCardMessage(&securitySettings, &actionCardMsg); err != nil {
 		t.Fatal(err)
@@ -79,8 +79,8 @@ func TestDingDingRobot_SendActionCardMessage2(t *testing.T) {
 		Text: `![screenshot](https://gw.alicdn.com/tfs/TB1ut3xxbsrBKNjSZFpXXcXhFXa-846-786.png) 
 ### 乔布斯 20 年前想打造的苹果咖啡厅
 Apple Store 的设计正从原来满满的科技感走向生活化，而其生活化的走向其实可以追溯到 20 年前苹果一个建立咖啡馆的计划`,
-		BtnOrientation: DingDingActionCardMessageBtnOrientationHorizontal,
-		Btns: []DingDingRobotActionCardButton{
+		ButtonOrientation: DingDingActionCardMessageButtonOrientationHorizontal,
+		Buttons: []DingDingRobotActionCardButton{
 			DingDingRobotActionCardButton{
 				Title:     "内容不错",
 				ActionURL: "http://oschina.net",

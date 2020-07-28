@@ -23,7 +23,7 @@ const WxWorkRobotMessageAPI = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send"
 const WxWorkRobotUploadFileAPI = "https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media"
 
 // WxWorkRobotTimeout is the wxwork robot default timeout
-const WxWorkRobotTimeout = time.Second * 30
+const WxWorkRobotTimeout = time.Second * 10
 const WxWorkRobotStatusOK = 0
 
 const (

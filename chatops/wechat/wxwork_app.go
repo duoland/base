@@ -40,7 +40,9 @@ const WxWorkAppUpdateGroupAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/upd
 const WxWorkAppGetGroupAPI = "https://qyapi.weixin.qq.com/cgi-bin/appchat/get"
 
 // WxWorkAppTimeout is the wxwork app default timeout
-const WxWorkAppTimeout = time.Second * 30
+const WxWorkAppTimeout = time.Second * 10
+
+// WxWorkAppStatusOK is the ok status of api call
 const WxWorkAppStatusOK = 0
 
 // See doc https://work.weixin.qq.com/api/doc/90000/90139/90313
