@@ -2,13 +2,14 @@ package wechat
 
 import (
 	"encoding/base64"
+	"os"
 	"testing"
 )
 
-var chatID = "test20200207"
-var corpID = "qqfc50e757c8e5ee4a"
-var corpSecret = "nrrsvlPyjUstiIveyHmhuSJazEgMFx8bDq99s3yD6nk"
-var agentID = "1000002"
+var chatID = os.Getenv("WXWORK_APP_CHAT_ID")
+var corpID = os.Getenv("WXWORK_APP_CORP_ID")
+var corpSecret = os.Getenv("WXWORK_APP_CORP_SECRET")
+var agentID = os.Getenv("WXWORK_APP_AGENT_ID")
 var userIDList = []string{"jinxinxin001", "jinchengxi001"}
 var partyIDList = []string{}
 var tagIDList = []string{}

@@ -1,9 +1,12 @@
 package dingtalk
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
-var accessToken = "5efccd002d85058a3871eba1eb32462f1086469a390b985f7875fccc01c373"
-var secretToken = "SEC58cc1c1833dadf104c275e188fe0b5b611062ba1007a3b29f320519e42a6d8"
+var accessToken = os.Getenv("DINGDING_ROBOT_ACCESS_TOKEN")
+var secretToken = os.Getenv("DINGDING_ROBOT_SECRET_TOKEN")
 var securitySettings = DingDingSecuritySettings{
 	AccessToken: accessToken,
 	SecureToken: secretToken,
