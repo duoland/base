@@ -423,17 +423,10 @@ func (r *DingDingApp) RecallMessage(taskID int) (revokeResp DingDingAppMessageRe
 	return
 }
 
-func (r *DingDingApp) SendGroupTextMessage(userIDList []string, departmentIDList []string, toAllUser bool, content string) (
+func (r *DingDingApp) SendGroupTextMessage(chatID string, content string) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeText,
 		"text":    map[string]string{"content": content},
@@ -441,17 +434,10 @@ func (r *DingDingApp) SendGroupTextMessage(userIDList []string, departmentIDList
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupMarkdownMessage(userIDList []string, departmentIDList []string, toAllUser bool, title, content string) (
+func (r *DingDingApp) SendGroupMarkdownMessage(chatID, title, content string) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":  DingDingAppMessageTypeMarkdown,
 		"markdown": map[string]string{"title": title, "text": content},
@@ -459,17 +445,10 @@ func (r *DingDingApp) SendGroupMarkdownMessage(userIDList []string, departmentID
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupImageMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
+func (r *DingDingApp) SendGroupImageMessage(chatID, mediaID string) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeImage,
 		"image":   map[string]string{"media_id": mediaID},
@@ -477,17 +456,10 @@ func (r *DingDingApp) SendGroupImageMessage(userIDList []string, departmentIDLis
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupVoiceMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string, duration int) (
+func (r *DingDingApp) SendGroupVoiceMessage(chatID, mediaID string, duration int) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeVoice,
 		"voice":   map[string]string{"media_id": mediaID, "duration": strconv.Itoa(duration)},
@@ -495,17 +467,10 @@ func (r *DingDingApp) SendGroupVoiceMessage(userIDList []string, departmentIDLis
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupFileMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
+func (r *DingDingApp) SendGroupFileMessage(chatID, mediaID string) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeFile,
 		"file":    map[string]string{"media_id": mediaID},
@@ -513,17 +478,10 @@ func (r *DingDingApp) SendGroupFileMessage(userIDList []string, departmentIDList
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupLinkMessage(userIDList []string, departmentIDList []string, toAllUser bool, linkMessage *DingDingAppLinkMessage) (
+func (r *DingDingApp) SendGroupLinkMessage(chatID string, linkMessage *DingDingAppLinkMessage) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeLink,
 		"link":    linkMessage,
@@ -531,17 +489,10 @@ func (r *DingDingApp) SendGroupLinkMessage(userIDList []string, departmentIDList
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) SendGroupActionCardMessage(userIDList []string, departmentIDList []string, toAllUser bool, actionCardMessage *DingDingAppActionCardMessage) (
+func (r *DingDingApp) SendGroupActionCardMessage(chatID string, actionCardMessage *DingDingAppActionCardMessage) (
 	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
-	messageObj["agent_id"] = r.agentID
-	if len(userIDList) > 0 {
-		messageObj["userid_list"] = strings.Join(userIDList, ",")
-	}
-	if len(departmentIDList) > 0 {
-		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
-	}
-	messageObj["to_all_user"] = toAllUser
+	messageObj["chatid"] = chatID
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":     DingDingAppMessageTypeActionCard,
 		"action_card": actionCardMessage,
