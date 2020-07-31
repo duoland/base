@@ -270,7 +270,6 @@ func (r *WxWorkRobot) UploadFile(key string, fileBody []byte, fileName string) (
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()

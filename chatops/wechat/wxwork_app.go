@@ -758,7 +758,6 @@ func (r *WxWorkApp) refreshAccessToken() (err error) {
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()
@@ -894,7 +893,6 @@ func (r *WxWorkApp) uploadFile(reqMethod, reqURL string, reqParams map[string]st
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()
@@ -951,7 +949,6 @@ func (r *WxWorkApp) fireRequest(reqMethod, reqURL string, reqParams map[string]s
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()

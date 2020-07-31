@@ -505,12 +505,10 @@ func (r *DingDingApp) refreshAccessToken() (err error) {
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()
 
-	io.Copy(os.Stdout, resp.Body)
 	// check http code
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("dingding request error, %s", resp.Status)
@@ -572,7 +570,6 @@ func (r *DingDingApp) fireRequest(reqMethod, reqURL string, reqParams map[string
 	resp, getErr := r.client.Do(req)
 	if getErr != nil {
 		err = fmt.Errorf("get response error, %s", getErr.Error())
-		io.Copy(ioutil.Discard, resp.Body)
 		return
 	}
 	defer resp.Body.Close()
