@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var chatID = os.Getenv("WXWORK_APP_CHAT_ID")
+var chatID = "citest"
 var corpID = os.Getenv("WXWORK_APP_CORP_ID")
 var corpSecret = os.Getenv("WXWORK_APP_CORP_SECRET")
 var agentID = os.Getenv("WXWORK_APP_AGENT_ID")

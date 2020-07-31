@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -27,11 +26,20 @@ const DingDingAppUpdateGroupAPI = "https://oapi.dingtalk.com/chat/update"
 // DingDingAppGetGroupAPI is the api to get dingding group
 const DingDingAppGetGroupAPI = "https://oapi.dingtalk.com/chat/get"
 
-// DingDingAppMessageAPI is the api to send message to end users
-const DingDingAppMessageAPI = "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2"
+// DingDingAppSendMessageAPI is the api to send message to end users
+const DingDingAppSendMessageAPI = "https://oapi.dingtalk.com/topapi/message/corpconversation/asyncsend_v2"
 
-// DingDingAppGroupMessageAPI is the api to send message to group
-const DingDingAppGroupMessageAPI = "https://oapi.dingtalk.com/chat/send"
+// DingDingAppGetMessageSendProgressAPI is the api to get the message send progress
+const DingDingAppGetMessageSendProgressAPI = "https://oapi.dingtalk.com/topapi/message/corpconversation/getsendprogress"
+
+// DingDingAppGetMessageSendResultAPI is the api to get the message send result
+const DingDingAppGetMessageSendResultAPI = "https://oapi.dingtalk.com/topapi/message/corpconversation/getsendresult"
+
+// DingDingAppRecallMessageAPI is the api to recall the message
+const DingDingAppRecallMessageAPI = "https://oapi.dingtalk.com/topapi/message/corpconversation/recall"
+
+// DingDingAppSendGroupMessageAPI is the api to send message to group
+const DingDingAppSendGroupMessageAPI = "https://oapi.dingtalk.com/chat/send"
 
 // DingDingAppTimeout is the dingding app default timeout
 const DingDingAppTimeout = time.Second * 10
@@ -115,15 +123,41 @@ type DingDingAppGroup struct {
 	ManagementType      int      `json:"managementType"`
 }
 
-type DingDingAppMessageResp struct {
+type DingDingAppMessageSendResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
-	TaskID     string `json:"task_id"`
+	TaskID     int    `json:"task_id"`
 }
 
-type DingDingAppMessageProgress struct {
+type DingDingAppMessageSendProgressResp struct {
+	ErrCode    int                            `json:"errcode"`
+	ErrMessage string                         `json:"errmsg"`
+	Progress   DingDingAppMessageSendProgress `json:"progress"`
+}
+
+type DingDingAppMessageSendProgress struct {
 	ProgressInPercent int `json:"progress_in_percent"`
 	Status            int `json:"status"`
+}
+
+type DingDingAppMessageSendResultResp struct {
+	ErrCode    int                          `json:"errcode"`
+	ErrMessage string                       `json:"errmsg"`
+	SendResult DingDingAppMessageSendResult `json:"send_result"`
+}
+
+type DingDingAppMessageSendResult struct {
+	InvalidUserIDList   []string `json:"invalid_user_id_list"`
+	ForbiddenUserIDList []string `json:"forbidden_user_id_list"`
+	FailedUserIDList    []string `json:"failed_user_id_list"`
+	ReadUserIDList      []string `json:"read_user_id_list"`
+	UnReadUserIDList    []string `json:"unread_user_id_list"`
+	InvalidDeptIDList   []string `json:"invalid_dept_id_list"`
+}
+
+type DingDingAppMessageRecallResp struct {
+	ErrCode    int    `json:"errcode"`
+	ErrMessage string `json:"errmsg"`
 }
 
 type DingDingAppLinkMessage struct {
@@ -134,13 +168,11 @@ type DingDingAppLinkMessage struct {
 }
 
 type DingDingAppActionCardMessage struct {
-	Title    string `json:"title"`
-	Markdown string `json:"markdown"`
-	// single jump action card fields
-	SingleTitle string `json:"single_title,omitempty"`
-	SingleURL   string `json:"single_url,omitempty"`
-	// standalone jump action card fields
-	ButtonOrientation string                        `json:"btn_orientation"`
+	Title             string                        `json:"title"`
+	Markdown          string                        `json:"markdown"`
+	SingleTitle       string                        `json:"single_title,omitempty"` // single jump action card fields
+	SingleURL         string                        `json:"single_url,omitempty"`
+	ButtonOrientation string                        `json:"btn_orientation"` // standalone jump action card fields
 	Buttons           []DingDingAppActionCardButton `json:"btn_json_list,omitempty"`
 }
 
@@ -149,7 +181,7 @@ type DingDingAppActionCardButton struct {
 	ActionURL string `json:"action_url"`
 }
 
-type DingDingAppGroupMessageResp struct {
+type DingDingAppGroupMessageSendResp struct {
 	ErrCode    int    `json:"errcode"`
 	ErrMessage string `json:"errmsg"`
 	MessageID  string `json:"messageId"`
@@ -187,11 +219,15 @@ func NewDingDingAppWithClient(appKey, appSecret, agentID string, client *http.Cl
 }
 
 func (r *DingDingApp) SendTextMessage(userIDList []string, departmentIDList []string, toAllUser bool, content string) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeText,
@@ -201,11 +237,15 @@ func (r *DingDingApp) SendTextMessage(userIDList []string, departmentIDList []st
 }
 
 func (r *DingDingApp) SendMarkdownMessage(userIDList []string, departmentIDList []string, toAllUser bool, title, content string) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":  DingDingAppMessageTypeMarkdown,
@@ -215,11 +255,15 @@ func (r *DingDingApp) SendMarkdownMessage(userIDList []string, departmentIDList 
 }
 
 func (r *DingDingApp) SendImageMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeImage,
@@ -229,11 +273,15 @@ func (r *DingDingApp) SendImageMessage(userIDList []string, departmentIDList []s
 }
 
 func (r *DingDingApp) SendVoiceMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string, duration int) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeVoice,
@@ -243,11 +291,15 @@ func (r *DingDingApp) SendVoiceMessage(userIDList []string, departmentIDList []s
 }
 
 func (r *DingDingApp) SendFileMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeFile,
@@ -257,11 +309,15 @@ func (r *DingDingApp) SendFileMessage(userIDList []string, departmentIDList []st
 }
 
 func (r *DingDingApp) SendLinkMessage(userIDList []string, departmentIDList []string, toAllUser bool, linkMessage *DingDingAppLinkMessage) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeLink,
@@ -271,11 +327,15 @@ func (r *DingDingApp) SendLinkMessage(userIDList []string, departmentIDList []st
 }
 
 func (r *DingDingApp) SendActionCardMessage(userIDList []string, departmentIDList []string, toAllUser bool, actionCardMessage *DingDingAppActionCardMessage) (
-	resp DingDingAppMessageResp, err error) {
+	resp DingDingAppMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":     DingDingAppMessageTypeActionCard,
@@ -284,8 +344,8 @@ func (r *DingDingApp) SendActionCardMessage(userIDList []string, departmentIDLis
 	return r.sendMessage(&messageObj)
 }
 
-func (r *DingDingApp) sendMessage(messageObj interface{}) (messageResp DingDingAppMessageResp, err error) {
-	err = r.fireRequest(http.MethodPost, DingDingAppMessageAPI, nil, messageObj, &messageResp)
+func (r *DingDingApp) sendMessage(messageObj interface{}) (messageResp DingDingAppMessageSendResp, err error) {
+	err = r.fireRequest(http.MethodPost, DingDingAppSendMessageAPI, nil, messageObj, &messageResp)
 	if err != nil {
 		return
 	}
@@ -300,12 +360,79 @@ func (r *DingDingApp) sendMessage(messageObj interface{}) (messageResp DingDingA
 	return
 }
 
+func (r *DingDingApp) GetMessageSendProgress(taskID int) (sendProgressResp DingDingAppMessageSendProgressResp, err error) {
+	agentID, _ := strconv.Atoi(r.agentID)
+	reqBody := map[string]int{
+		"agent_id": agentID,
+		"task_id":  taskID,
+	}
+	err = r.fireRequest(http.MethodPost, DingDingAppGetMessageSendProgressAPI, nil, &reqBody, &sendProgressResp)
+	if err != nil {
+		return
+	}
+	if sendProgressResp.ErrCode != DingDingAppStatusOK {
+		if sendProgressResp.ErrCode == DingDingCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
+		err = fmt.Errorf("call dingding app message api error, %d %s", sendProgressResp.ErrCode, sendProgressResp.ErrMessage)
+		return
+	}
+	return
+}
+
+func (r *DingDingApp) GetMessageSendResult(taskID int) (sendResultResp DingDingAppMessageSendResultResp, err error) {
+	agentID, _ := strconv.Atoi(r.agentID)
+	reqBody := map[string]int{
+		"agent_id": agentID,
+		"task_id":  taskID,
+	}
+	err = r.fireRequest(http.MethodPost, DingDingAppGetMessageSendResultAPI, nil, &reqBody, &sendResultResp)
+	if err != nil {
+		return
+	}
+	if sendResultResp.ErrCode != DingDingAppStatusOK {
+		if sendResultResp.ErrCode == DingDingCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
+		err = fmt.Errorf("call dingding app message api error, %d %s", sendResultResp.ErrCode, sendResultResp.ErrMessage)
+		return
+	}
+	return
+}
+
+func (r *DingDingApp) RecallMessage(taskID int) (revokeResp DingDingAppMessageRecallResp, err error) {
+	agentID, _ := strconv.Atoi(r.agentID)
+	reqBody := map[string]int{
+		"agent_id": agentID,
+		"task_id":  taskID,
+	}
+	err = r.fireRequest(http.MethodPost, DingDingAppGetMessageSendResultAPI, nil, &reqBody, &revokeResp)
+	if err != nil {
+		return
+	}
+	if revokeResp.ErrCode != DingDingAppStatusOK {
+		if revokeResp.ErrCode == DingDingCodeAccessTokenExpired {
+			// reset the access token
+			r.accessToken = ""
+		}
+		err = fmt.Errorf("call dingding app message api error, %d %s", revokeResp.ErrCode, revokeResp.ErrMessage)
+		return
+	}
+	return
+}
+
 func (r *DingDingApp) SendGroupTextMessage(userIDList []string, departmentIDList []string, toAllUser bool, content string) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeText,
@@ -315,11 +442,15 @@ func (r *DingDingApp) SendGroupTextMessage(userIDList []string, departmentIDList
 }
 
 func (r *DingDingApp) SendGroupMarkdownMessage(userIDList []string, departmentIDList []string, toAllUser bool, title, content string) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":  DingDingAppMessageTypeMarkdown,
@@ -329,11 +460,15 @@ func (r *DingDingApp) SendGroupMarkdownMessage(userIDList []string, departmentID
 }
 
 func (r *DingDingApp) SendGroupImageMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeImage,
@@ -343,11 +478,15 @@ func (r *DingDingApp) SendGroupImageMessage(userIDList []string, departmentIDLis
 }
 
 func (r *DingDingApp) SendGroupVoiceMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string, duration int) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeVoice,
@@ -357,11 +496,15 @@ func (r *DingDingApp) SendGroupVoiceMessage(userIDList []string, departmentIDLis
 }
 
 func (r *DingDingApp) SendGroupFileMessage(userIDList []string, departmentIDList []string, toAllUser bool, mediaID string) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeFile,
@@ -371,11 +514,15 @@ func (r *DingDingApp) SendGroupFileMessage(userIDList []string, departmentIDList
 }
 
 func (r *DingDingApp) SendGroupLinkMessage(userIDList []string, departmentIDList []string, toAllUser bool, linkMessage *DingDingAppLinkMessage) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype": DingDingAppMessageTypeLink,
@@ -385,11 +532,15 @@ func (r *DingDingApp) SendGroupLinkMessage(userIDList []string, departmentIDList
 }
 
 func (r *DingDingApp) SendGroupActionCardMessage(userIDList []string, departmentIDList []string, toAllUser bool, actionCardMessage *DingDingAppActionCardMessage) (
-	resp DingDingAppGroupMessageResp, err error) {
+	resp DingDingAppGroupMessageSendResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["agent_id"] = r.agentID
-	messageObj["userid_list"] = strings.Join(userIDList, ",")
-	messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	if len(userIDList) > 0 {
+		messageObj["userid_list"] = strings.Join(userIDList, ",")
+	}
+	if len(departmentIDList) > 0 {
+		messageObj["dept_id_list"] = strings.Join(departmentIDList, ",")
+	}
 	messageObj["to_all_user"] = toAllUser
 	messageObj["msg"] = map[string]interface{}{
 		"msgtype":     DingDingAppMessageTypeActionCard,
@@ -398,8 +549,8 @@ func (r *DingDingApp) SendGroupActionCardMessage(userIDList []string, department
 	return r.sendGroupMessage(&messageObj)
 }
 
-func (r *DingDingApp) sendGroupMessage(messageObj interface{}) (messageResp DingDingAppGroupMessageResp, err error) {
-	err = r.fireRequest(http.MethodPost, DingDingAppGroupMessageAPI, nil, messageObj, &messageResp)
+func (r *DingDingApp) sendGroupMessage(messageObj interface{}) (messageResp DingDingAppGroupMessageSendResp, err error) {
+	err = r.fireRequest(http.MethodPost, DingDingAppSendGroupMessageAPI, nil, messageObj, &messageResp)
 	if err != nil {
 		return
 	}
