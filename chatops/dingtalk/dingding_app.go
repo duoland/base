@@ -408,7 +408,7 @@ func (r *DingDingApp) RecallMessage(taskID int) (revokeResp DingDingAppMessageRe
 		"agent_id": agentID,
 		"task_id":  taskID,
 	}
-	err = r.fireRequest(http.MethodPost, DingDingAppGetMessageSendResultAPI, nil, &reqBody, &revokeResp)
+	err = r.fireRequest(http.MethodPost, DingDingAppRecallMessageAPI, nil, &reqBody, &revokeResp)
 	if err != nil {
 		return
 	}
