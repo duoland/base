@@ -9,7 +9,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -69,7 +68,6 @@ func (r *FeiShuRobot) sendMessage(key string, messageObj interface{}) (err error
 		return
 	}
 	defer resp.Body.Close()
-	io.Copy(os.Stdout, resp.Body)
 	// check http code
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("feishu shortcut request error, %s", resp.Status)
