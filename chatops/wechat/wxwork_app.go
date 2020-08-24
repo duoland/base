@@ -382,7 +382,7 @@ func (r *WxWorkApp) SendFileMessage(userIDList []string, partyIDList []string, t
 	return r.sendMessage(&messageObj)
 }
 
-func (r *WxWorkApp) SendTextCardMessage(userIDList []string, partyIDList []string, tagIDList []string, mediaID, title, description, url, btnText string,
+func (r *WxWorkApp) SendTextCardMessage(userIDList []string, partyIDList []string, tagIDList []string, title, description, url, btnText string,
 	options *WxWorkAppMessageSendOptions) (resp WxWorkAppMessageResp, err error) {
 	messageObj := make(map[string]interface{})
 	messageObj["touser"] = strings.Join(userIDList, "|")
@@ -391,7 +391,6 @@ func (r *WxWorkApp) SendTextCardMessage(userIDList []string, partyIDList []strin
 	messageObj["msgtype"] = WxWorkAppMessageTypeTextCard
 	messageObj["agentid"] = r.agentID
 	messageObj["textcard"] = map[string]string{
-		"media_id":    mediaID,
 		"title":       title,
 		"description": description,
 		"url":         url,

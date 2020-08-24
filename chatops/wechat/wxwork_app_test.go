@@ -87,7 +87,7 @@ func TestWxWorkApp_SendVideoMessage(t *testing.T) {
 
 func TestWxWorkApp_SendTextCardMessageC(t *testing.T) {
 	wxworkApp := NewWxWorkApp(corpID, corpSecret, agentID)
-	_, err := wxworkApp.SendTextCardMessage(userIDList, nil, nil, mediaID, "人民", "伟大的人民",
+	_, err := wxworkApp.SendTextCardMessage(userIDList, nil, nil, "人民", "伟大的人民",
 		"https://oschina.net", "看看",
 		&WxWorkAppMessageSendOptions{EnableIDTrans: true})
 	if err != nil {
