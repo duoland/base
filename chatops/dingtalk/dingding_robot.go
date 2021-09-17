@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/duoke/base/hash"
+	"github.com/duoland/base/hash"
 	"io"
 	"io/ioutil"
 	"net/http"

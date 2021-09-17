@@ -4,7 +4,7 @@ package http
 //
 //import (
 //	"fmt"
-//	"github.com/duoke/base/server"
+//	"github.com/duoland/base/server"
 //	"net/http"
 //	"time"
 //)
