@@ -66,8 +66,8 @@ func InitTranslations(localeDir string) (err error) {
 		}
 
 		// parse locale and messages
-		translationFileRelativePath := strings.TrimPrefix(strings.TrimPrefix(path, localeDir), "/")
-		translationItems := strings.Split(translationFileRelativePath, "/")
+		translationFileRelativePath := strings.TrimPrefix(strings.TrimPrefix(path, localeDir), string(os.PathSeparator))
+		translationItems := strings.Split(translationFileRelativePath, string(os.PathSeparator))
 		if len(translationItems) != 2 {
 			fmt.Fprintf(os.Stderr, "[i18n] ignore the invalid translation file path %s\n", translationFileRelativePath)
 			return nil
