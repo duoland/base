@@ -5,18 +5,18 @@ import (
 	"strings"
 )
 
-// CollectNonEmptyFields collects the field names of a struct which are not holding none empty values
-func CollectNoneEmptyFields(v interface{}) (fields []string) {
+// CollectNoneZeroFields collects the field names of a struct which are not holding zero values
+func CollectNoneZeroFields(v interface{}) (fields []string) {
 	fields = make([]string, 0)
 	val := reflect.ValueOf(v)
 	for i := 0; i < val.NumField(); i++ {
 		fieldVal := val.Field(i)
 		fieldName := val.Type().Field(i).Name
-		// if fieldName is id or updated_at, update it always
+		// if fieldName is id or update time field, always update
 		fieldNameLower := strings.ToLower(fieldName)
 		if fieldNameLower == "id" {
 			continue
-		} else if fieldNameLower == "updated_at" || fieldNameLower == "updatedat" {
+		} else if fieldNameLower == "updatedat" || fieldNameLower == "updateat" || fieldNameLower == "updatetime" {
 			fields = append(fields, fieldName)
 			continue
 		}
