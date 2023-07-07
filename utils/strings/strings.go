@@ -3,6 +3,7 @@ package strings
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 func SliceContains(slice []string, s string) bool {
@@ -68,6 +69,11 @@ func ToJsonStringPretty(src any) string {
 
 func Int64ToString(value int64) string {
 	return fmt.Sprintf("%d", value)
+}
+
+func StringToInt64(str string) int64 {
+	val, _ := strconv.ParseInt(str, 10, 64)
+	return val
 }
 
 func IsEmpty(s *string) bool {

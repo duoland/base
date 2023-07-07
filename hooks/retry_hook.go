@@ -2,31 +2,32 @@ package hooks
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 )
 
-func CreateFixedIntervals(times uint, interval time.Duration) []time.Duration {
-	intervals := make([]time.Duration, 0, times)
+func CreateFixedIntervals(maxTimes uint, interval time.Duration) []time.Duration {
+	intervals := make([]time.Duration, 0, maxTimes)
 	var i uint
-	for i = 1; i <= times; i++ {
+	for i = 1; i <= maxTimes; i++ {
 		intervals = append(intervals, interval)
 	}
 	return intervals
 }
 
-func CreateLinearIntervals(times uint, interval time.Duration) []time.Duration {
-	intervals := make([]time.Duration, 0, times)
+func CreateLinearIntervals(maxTimes uint, interval time.Duration) []time.Duration {
+	intervals := make([]time.Duration, 0, maxTimes)
 	var i uint
-	for i = 1; i <= times; i++ {
+	for i = 1; i <= maxTimes; i++ {
 		intervals = append(intervals, time.Duration(i)*interval)
 	}
 	return intervals
 }
 
-func CreateFibonacciIntervals(times uint, interval time.Duration) []time.Duration {
-	intervals := make([]time.Duration, 0, times)
-	for _, val := range createFibonacciInts(times) {
+func CreateFibonacciIntervals(maxTimes uint, interval time.Duration) []time.Duration {
+	intervals := make([]time.Duration, 0, maxTimes)
+	for _, val := range createFibonacciInts(maxTimes) {
 		intervals = append(intervals, time.Duration(val)*interval)
 	}
 	return intervals
@@ -51,22 +52,22 @@ func createFibonacciInts(max uint) []uint {
 	}
 }
 
-func RunWithRetry(ctx context.Context, fn func(context.Context) error, retryIntervals []time.Duration) (err error) {
-	log.Println("first run ...")
+func RunWithRetry(ctx context.Context, taskName string, fn func(context.Context) error, retryIntervals []time.Duration) (err error) {
+	log.Println(taskName, "run first...")
 	// first run
 	err = fn(ctx)
 	if err == nil {
 		return
 	}
 	// retry logic
-	for _, interval := range retryIntervals {
+	for index, interval := range retryIntervals {
 		select {
 		case <-ctx.Done():
-			log.Println("cancel run ...")
+			log.Println(taskName, "run canceled ...")
 			err = context.Canceled
 			return
 		case <-time.After(interval):
-			log.Println("retry run ...")
+			log.Println(taskName, fmt.Sprintf("retry run %d times ...", index+1))
 			err = fn(ctx)
 			if err == nil || err == context.Canceled || err == context.DeadlineExceeded {
 				return
