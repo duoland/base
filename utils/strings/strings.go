@@ -1,6 +1,9 @@
 package strings
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 func SliceContains(slice []string, s string) bool {
 	for _, item := range slice {
@@ -40,18 +43,6 @@ func ReverseString(str string) (output string) {
 	return
 }
 
-func Int64ToString(value int64) string {
-	return fmt.Sprintf("%d", value)
-}
-
-func IsNilOrEmpty(s *string) bool {
-	return s == nil || *s == ""
-}
-
-func IsEmpty(s string) bool {
-	return s == ""
-}
-
 func TruncateRuneToSize(str string, maxAllowedSize int) string {
 	chars := []rune(str)
 	if len(chars) <= maxAllowedSize {
@@ -59,4 +50,30 @@ func TruncateRuneToSize(str string, maxAllowedSize int) string {
 	}
 	// otherwise
 	return string(chars[:maxAllowedSize])
+}
+
+func ToJsonString(src any) string {
+	return string(ToJsonBytes(src))
+}
+
+func ToJsonBytes(src any) []byte {
+	data, _ := json.Marshal(src)
+	return data
+}
+
+func ToJsonStringPretty(src any) string {
+	dst, _ := json.MarshalIndent(src, "", "\t")
+	return string(dst)
+}
+
+func Int64ToString(value int64) string {
+	return fmt.Sprintf("%d", value)
+}
+
+func IsEmpty(s *string) bool {
+	return s == nil || *s == ""
+}
+
+func IsNotEmpty(s *string) bool {
+	return s != nil && *s != ""
 }
