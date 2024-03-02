@@ -71,8 +71,17 @@ func Int64ToString(value int64) string {
 	return fmt.Sprintf("%d", value)
 }
 
+func Uint64ToString(value uint64) string {
+	return fmt.Sprintf("%d", value)
+}
+
 func StringToInt64(str string) int64 {
 	val, _ := strconv.ParseInt(str, 10, 64)
+	return val
+}
+
+func StringToUint64(str string) uint64 {
+	val, _ := strconv.ParseUint(str, 10, 64)
 	return val
 }
 
