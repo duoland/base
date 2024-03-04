@@ -92,3 +92,19 @@ func IsEmpty(s *string) bool {
 func IsNotEmpty(s *string) bool {
 	return s != nil && *s != ""
 }
+
+func Int64SliceToStringSlice(values []int64) (valueStrs []string) {
+	valueStrs = make([]string, 0, len(values))
+	for _, value := range values {
+		valueStrs = append(valueStrs, Int64ToString(value))
+	}
+	return
+}
+
+func StringSliceToInt64Slice(valueStrs []string) (values []int64) {
+	values = make([]int64, 0, len(valueStrs))
+	for _, valueStr := range valueStrs {
+		values = append(values, StringToInt64(valueStr))
+	}
+	return
+}
