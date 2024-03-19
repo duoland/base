@@ -79,7 +79,7 @@ func (s *StringSet) Union(p *StringSet) *StringSet {
 	}
 }
 
-//Intersect returns a new string set which holds the elems intersect of both set
+// Intersect returns a new string set which holds the elems intersect of both set
 func (s *StringSet) Intersect(p *StringSet) *StringSet {
 	intersectElems := make(map[string]struct{})
 	for k, v := range s.setElems {
@@ -93,7 +93,7 @@ func (s *StringSet) Intersect(p *StringSet) *StringSet {
 	}
 }
 
-//Difference returns a new string set which holds the elems in s but not in p
+// Difference returns a new string set which holds the elems in s but not in p
 func (s *StringSet) Difference(p *StringSet) *StringSet {
 	diffElems := make(map[string]struct{})
 	for k, v := range s.setElems {
@@ -105,3 +105,12 @@ func (s *StringSet) Difference(p *StringSet) *StringSet {
 		setElems: diffElems,
 	}
 }
+
+// Exists checks whether the specified elem exists in set.
+func (s *StringSet) Exists(str string) bool {
+	if _, ok := s.setElems[str]; ok {
+		return true
+	}
+	return false
+}
+进入IDE阅读
