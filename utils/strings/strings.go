@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 func SliceContains(slice []string, s string) bool {
@@ -107,4 +108,37 @@ func StringSliceToInt64Slice(valueStrs []string) (values []int64) {
 		values = append(values, StringToInt64(valueStr))
 	}
 	return
+}
+
+// Int64ToBase32 将 int64 类型的整数转换为 32 进制字符串
+func Int64ToBase32(num int64) string {
+	// 定义 32 进制字符集
+	base32Chars := "0123456789abcdefghijklmnopqrstuv"
+	// 处理 num 为 0 的特殊情况
+	if num == 0 {
+		return "0"
+	}
+	// 用于存储转换结果的字符串构建器
+	var result strings.Builder
+	// 循环取模，直到 num 变为 0
+	for num > 0 {
+		// 计算当前位对应的 32 进制字符的索引
+		remainder := num % 32
+		// 将对应的字符添加到结果构建器中
+		result.WriteByte(base32Chars[remainder])
+		// 更新 num 的值，进行下一轮取模
+		num /= 32
+	}
+	// 反转结果字符串
+	reversed := result.String()
+	return reverseString(reversed)
+}
+
+// reverseString 反转字符串
+func reverseString(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+	return string(runes)
 }
