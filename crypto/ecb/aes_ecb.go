@@ -7,28 +7,28 @@ import (
 )
 
 // AESEncrypt - AES encryption
-func AESEncrypt(pt, key []byte) []byte {
+func AESEncrypt(pt, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	mode := ecb.NewECBEncrypter(block)
 	padder := padding.NewPkcs7Padding(mode.BlockSize())
 	// pad last block of plaintext if block size less than block cipher size
 	pt, err = padder.Pad(pt)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	ct := make([]byte, len(pt))
 	mode.CryptBlocks(ct, pt)
-	return ct
+	return ct, nil
 }
 
 // AESDecrypt - AES decryption
-func AESDecrypt(ct, key []byte) []byte {
+func AESDecrypt(ct, key []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
 	mode := ecb.NewECBDecrypter(block)
 	pt := make([]byte, len(ct))
@@ -37,7 +37,7 @@ func AESDecrypt(ct, key []byte) []byte {
 	// unpad plaintext after decryption
 	pt, err = padder.Unpad(pt)
 	if err != nil {
-		panic(err.Error())
+		return nil, err
 	}
-	return pt
+	return pt, nil
 }
