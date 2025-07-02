@@ -18,10 +18,11 @@ type APIRet interface {
 }
 
 type BaseAPIRet struct {
+	Status    int    `json:"status"`
 	Code      string `json:"code"`
-	Message   string `json:"message"`
+	Message   string `json:"msg"`
 	Data      any    `json:"data"`
-	RequestID string `json:"requestId"`
+	RequestID string `json:"requestID"`
 }
 
 func (r *BaseAPIRet) SetRequestID(requestID string) {
@@ -45,25 +46,25 @@ func (r *BaseAPIRet) RetMessage() string {
 }
 
 type PagerData struct {
-	PageNo     int   `json:"pageNo"`
-	PageSize   int   `json:"pageSize"`
-	TotalCount int64 `json:"totalCount"`
-	PageList   any   `json:"pageList"`
+	Page    int   `json:"page"`
+	PerPage int   `json:"perPage"`
+	Total   int64 `json:"total"`
+	Items   []any `json:"items"`
 }
 
 type Pager struct {
-	PageNo     int
-	PageSize   int
-	TotalCount int64
-	SortBys    map[string]string
+	Page    int
+	PerPage int
+	Total   int64
+	SortBys map[string]string
 }
 
 func (p *Pager) Pages() int {
-	return int((p.TotalCount + int64(p.PageSize) - 1) / int64(p.PageSize))
+	return int((p.Total + int64(p.PerPage) - 1) / int64(p.Page))
 }
 
-func (p *Pager) Set(pageNo, pageSize int, totalCount int64) {
-	p.PageNo = pageNo
-	p.PageSize = pageSize
-	p.TotalCount = totalCount
+func (p *Pager) Set(page, perPage int, total int64) {
+	p.Page = page
+	p.PerPage = perPage
+	p.Total = total
 }
