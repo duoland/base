@@ -6,7 +6,7 @@ import (
 )
 
 const Base32Chars = "0123456789abcdefghijklmnopqrstuv"
-const Base62Chars = "0123456789abcdefghijklmnopqrstuvABCDEFGHIJKLMNOPQRSTUV"
+const Base62Chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 // Int64ToBase32 将 int64 类型的整数转换为 32 进制字符串
 func Int64ToBase32(num int64) string {

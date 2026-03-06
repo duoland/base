@@ -14,7 +14,7 @@ func TestInt64ToBase32(t *testing.T) {
 }
 
 func TestInt64ToBase62(t *testing.T) {
-	var src int64 = 1892882925901320192
+	var src int64 = 2029860761311907840
 	dst := Int64ToBase62(src)
 	t.Log("base62=", dst)
 	src1, _ := Base62ToInt64(dst)
